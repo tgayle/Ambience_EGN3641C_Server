@@ -1,12 +1,14 @@
 require('dotenv').load();
 
-const AccessToken = require('twilio').jwt.AccessToken;
+import {jwt, twiml} from 'twilio';
+import {Request, Response} from 'express';
+const {AccessToken} = jwt;
 const VoiceGrant = AccessToken.VoiceGrant;
-const VoiceResponse = require('twilio').twiml.VoiceResponse;
+const VoiceResponse = twiml.VoiceResponse;
 const defaultIdentity = 'alice';
 const callerId = 'client:quick_start';
 // Use a valid Twilio number by adding to your account via https://www.twilio.com/console/phone-numbers/verified
-const callerNumber = '1234567890';
+const callerNumber = '2564748556';
 
 /**
  * Creates an access token with VoiceGrant using your Twilio credentials.
@@ -15,7 +17,7 @@ const callerNumber = '1234567890';
  * @param {Object} response - The Response Object for the http request
  * @returns {string} - The Access Token string
  */
-function tokenGenerator(request, response) {
+export function tokenGenerator(request: Request, response: Response) {
   // Parse the identity from the http request
   var identity = null;
   if (request.method == 'POST') {
@@ -29,9 +31,9 @@ function tokenGenerator(request, response) {
   }
 
   // Used when generating any kind of tokens
-  const accountSid = process.env.ACCOUNT_SID;
-  const apiKey = process.env.API_KEY;
-  const apiSecret = process.env.API_KEY_SECRET;
+  const accountSid = process.env.ACCOUNT_SID!!;
+  const apiKey = process.env.API_KEY!!;
+  const apiSecret = process.env.API_KEY_SECRET!!;
 
   // Used specifically for creating Voice tokens
   const pushCredSid = process.env.PUSH_CREDENTIAL_SID;
@@ -48,7 +50,7 @@ function tokenGenerator(request, response) {
   // containing the grant we just created
   const token = new AccessToken(accountSid, apiKey, apiSecret);
   token.addGrant(voiceGrant);
-  token.identity = identity;
+  (token as any).identity = identity;
   console.log('Token:' + token.toJwt());
   return response.send(token.toJwt());
 }
@@ -65,7 +67,7 @@ function tokenGenerator(request, response) {
  * @param {Object} response - The Response Object for the http request
  * @returns {Object} - The Response Object with TwiMl, used to respond to an outgoing call
  */
-function makeCall(request, response) {
+export function makeCall(request: Request, response: Response) {
   // The recipient of the call, a phone number or a client
   var to = null;
   if (request.method == 'POST') {
@@ -96,7 +98,7 @@ function makeCall(request, response) {
  * @param {Object} response - The Response Object for the http request
  * @returns {string} - The CallSid
  */
-async function placeCall(request, response) {
+export async function placeCall(request: Request, response: Response) {
   // The recipient of the call, a phone number or a client
   var to = null;
   if (request.method == 'POST') {
@@ -112,7 +114,7 @@ async function placeCall(request, response) {
   const apiKey = process.env.API_KEY;
   const apiSecret = process.env.API_KEY_SECRET;
   const client = require('twilio')(apiKey, apiSecret, { accountSid: accountSid } );
-
+  let call;
   if (!to) {
     console.log("Calling default client:" + defaultIdentity);
     call = await client.api.calls.create({
@@ -143,21 +145,22 @@ async function placeCall(request, response) {
 /**
  * Creates an endpoint that plays back a greeting.
  */
-function incoming() {
+export function incoming() {
   const voiceResponse = new VoiceResponse();
   voiceResponse.say("Congratulations! You have received your first inbound call! Good bye.");
   console.log('Response:' + voiceResponse.toString());
   return voiceResponse.toString();
 }
 
-function welcome() {
+export function welcome() {
   const voiceResponse = new VoiceResponse();
   voiceResponse.say("Welcome to Twilio");
   console.log('Response:' + voiceResponse.toString());
   return voiceResponse.toString();
 }
 
-function isNumber(to) {
+function isNumber(to: any) {
+  let number;
   if(to.length == 1) {
     if(!isNaN(to)) {
       console.log("It is a 1 digit long number" + to);
@@ -178,9 +181,3 @@ function isNumber(to) {
   console.log("not a number");
   return false;
 }
-
-exports.tokenGenerator = tokenGenerator;
-exports.makeCall = makeCall;
-exports.placeCall = placeCall;
-exports.incoming = incoming;
-exports.welcome = welcome;

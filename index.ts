@@ -1,16 +1,16 @@
 require('dotenv').load();
 
-const http = require('http');
-const path = require('path');
-const express = require('express');
-const bodyParser = require('body-parser')
-const methods = require('./src/server.js');
-const tokenGenerator = methods.tokenGenerator;
-const makeCall = methods.makeCall;
-const placeCall = methods.placeCall;
-const incoming = methods.incoming;
-const welcome = methods.welcome;
-var twilio = require('twilio');
+import http from 'http';
+import path from 'path';
+import express from 'express';
+import bodyParser from 'body-parser';
+import {
+  tokenGenerator,
+  makeCall,
+  placeCall,
+  incoming,
+  welcome,
+} from './src/server';
 
 // Create Express webapp
 const app = express();
