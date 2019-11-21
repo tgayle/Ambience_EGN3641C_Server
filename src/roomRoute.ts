@@ -22,15 +22,18 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { name: roomName, private: isPrivate, password, creator } = req.body as any as { 
-    creator: string | undefined, 
-    name: string, 
-    private: string | undefined, 
-    password: string | undefined
-  }
+  type ExpectedNewRoomBody = {
+    creator: string | undefined;
+    name: string;
+    private: string | undefined;
+    password: string | undefined;
+  };
+
+  const { name: roomName, private: isPrivate, password, creator } = req.body as ExpectedNewRoomBody
   console.log(req.body);
 
   const room = await t.video.rooms.create({
+    statusCallback: 'https://dc77a684.ngrok.io/room/update',
     uniqueName: roomName,
     recordParticipantsOnConnect: false
   });
@@ -47,6 +50,13 @@ router.post('/', async (req, res) => {
   const createdRoom = await repo.create(thisRoom);
 
   res.json(createdRoom);
+})
+
+router.post('/update', async (req, res) => {
+  res.send("yes");
+  console.log('\n\n\n\n')
+  console.log(req.body);
+  // TODO: Persist these updates to firestore.
 })
 
 router.get('/update', async (req, res) => {
@@ -69,7 +79,31 @@ router.get('/update', async (req, res) => {
 })
 
 router.get('/join', async (req, res) => {
-  res.send('join');
+  type JoinParamsExpected = {
+    name: string,
+    password: string | undefined,
+  }
+
+  const {name, password} = req.query as JoinParamsExpected;
+
+  const repo = getRepository(AmbienceRoom);
+  const roomFromFirebase = await repo.whereEqualTo('uniqueName', name).findOne();
+
+  if (!roomFromFirebase) {
+    return res.status(404).json({error: 'That room doesn\'t exist.'})
+  }
+
+  if (roomFromFirebase.password && roomFromFirebase.password !== password) {
+    return res.status(401).json({error: 'Either that room doesn\'t exist or you entered an invalid password.'})
+  }
+
+  return res.json({
+    room: {
+      name: roomFromFirebase.uniqueName,
+      url: roomFromFirebase.url,
+      maxParticipants: roomFromFirebase.maxParticipants
+    }
+  })
 })
 
 
