@@ -81,8 +81,3 @@ const port = process.env.PORT || 3000;
 server.listen(port, function() {
   console.log('Express server running on *:' + port);
 });
-
-
-/*
-TODO: Fetch this data from android
-*/
