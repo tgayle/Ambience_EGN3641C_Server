@@ -61,8 +61,12 @@ export type LocalRoom = Room & {
   creator: string;
 }
 
+type RoomStatus = "in-progress" | "completed" | "failed";
+
+type RoomType = "peer-to-peer" | "group" | "group-small";
+
 export type Room = {
-  accountSid: string;  
+  accountSid: string;
   dateCreated: Date;
   dateUpdated: Date;
   duration: number;
@@ -72,11 +76,63 @@ export type Room = {
   maxParticipants: number;
   recordParticipantsOnConnect: boolean;
   sid: string;
-  status: "in-progress" | "completed" | "failed";
+  status: RoomStatus;
   statusCallback: string;
   statusCallbackMethod: string;
-  type: "peer-to-peer" | "group" | "group-small";
+  type: RoomType;
   uniqueName: string;
   url: string;
   videoCodecs: ("VP8" | "H264")[];
+}
+
+export type RoomUpdate = {
+  RoomStatus: RoomStatus,
+  RoomType: RoomType,
+  RoomSid: string,
+  RoomName: string,
+  SequenceNumber: string,
+  StatusCallbackEvent: StatusCallbackEvent,
+  Timestamp: StringDate,
+  AccountSid: string
+}
+
+export interface ParticipantOrTrackUpdate extends RoomUpdate {
+  StatusCallbackEvent: StatusParticipantCallbackEvent | StatusTrackCallbackEvent;
+  ParticipantSid: string;
+  ParticipantStatus: 'connected' | 'disconnected';
+  ParticipantIdentity: string;
+}
+
+export type StatusParticipantCallbackEvent =
+  'participant-connected' |
+  'participant-disconnected';
+
+export type StatusRoomCallbackEvent =
+  'room-created' |
+  'room-ended'
+
+export type StatusTrackCallbackEvent = 'track-added' |
+  'track-removed' |
+  'track-enabled' |
+  'track-disabled';
+
+export type StatusRecordingCallbackEvent = 'recording-started' |
+  'recording-completed' |
+  'recording-failed';
+
+export type StatusCallbackEvent =
+  StatusParticipantCallbackEvent |
+  StatusRoomCallbackEvent |
+  StatusTrackCallbackEvent |
+  StatusRecordingCallbackEvent;
+
+export function isParticipantOrTrackUpdate(update: RoomUpdate): update is ParticipantOrTrackUpdate {
+  return [
+    'participant-connected',
+    'participant-disconnected',
+    'track-added',
+    'track-removed',
+    'track-enabled',
+    'track-disabled'
+  ].includes(update.StatusCallbackEvent);
 }

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getRepository } from "fireorm";
 import twilio from 'twilio';
-import AmbienceRoom from "./models/Room";
+import AmbienceRoom, { RoomUpdate, isParticipantOrTrackUpdate } from "./models/Room";
 import axios from 'axios';
 
 const t = twilio(process.env.ACCOUNT_SID, process.env.AUTH_TOKEN)
@@ -33,7 +33,7 @@ router.post('/', async (req, res) => {
   console.log(req.body);
 
   const room = await t.video.rooms.create({
-    statusCallback: 'https://1250a54f.ngrok.io/room/update',
+    statusCallback: process.env.ROOM_CALLBACK,
     uniqueName: roomName,
     recordParticipantsOnConnect: false
   });
@@ -55,8 +55,20 @@ router.post('/', async (req, res) => {
 router.post('/update', async (req, res) => {
   res.send("yes");
   console.log('\n\n\n\n')
-  console.log(req.body);
-  // TODO: Persist these updates to firestore.
+  const update = req.body as RoomUpdate;
+
+  if (isParticipantOrTrackUpdate(update)) {
+    console.log(`${update.ParticipantIdentity} joined.`)
+  }
+
+  const repo = getRepository(AmbienceRoom);
+  const fireRoom = await fetchRoomBySid(update.RoomSid);
+  if (fireRoom) {
+    if (update.StatusCallbackEvent == 'room-ended') {
+      await repo.delete(fireRoom.id)
+      console.log('Removed a room that ended.')
+    }
+  }
 })
 
 router.get('/update', async (req, res) => {
@@ -90,17 +102,20 @@ router.get('/join', async (req, res) => {
   }
 
   if (roomFromFirebase.password === password) {
-    return res.json({
-      room: {
-        sid: roomFromFirebase.sid,
-        name: roomFromFirebase.uniqueName,
-        url: roomFromFirebase.url,
-        maxParticipants: roomFromFirebase.maxParticipants
-      }
-    })
+    return res.json(roomFromFirebase)
   }
   return res.status(401).json({error: 'Either that room doesn\'t exist or you entered an invalid password.'})
 })
+
+async function fetchRoomByName(name: string) {
+  const repo = getRepository(AmbienceRoom);
+  return await repo.whereEqualTo('uniqueName', name).findOne();
+}
+
+async function fetchRoomBySid(sid: string) {
+  const repo = getRepository(AmbienceRoom);
+  return await repo.whereEqualTo('sid', sid).findOne();
+}
 
 
 export default router;

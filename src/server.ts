@@ -4,6 +4,7 @@ import {jwt, twiml} from 'twilio';
 import {Request, Response} from 'express';
 const {AccessToken} = jwt;
 const VoiceGrant = AccessToken.VoiceGrant;
+const VideoGrant = AccessToken.VideoGrant;
 const VoiceResponse = twiml.VoiceResponse;
 const defaultIdentity = 'alice';
 const callerId = 'client:quick_start';
@@ -46,10 +47,13 @@ export function tokenGenerator(request: Request, response: Response) {
       pushCredentialSid: pushCredSid
     });
 
+  const videoGrant = new VideoGrant()
+
   // Create an access token which we will sign and return to the client,
   // containing the grant we just created
   const token = new AccessToken(accountSid, apiKey, apiSecret);
   token.addGrant(voiceGrant);
+  token.addGrant(videoGrant);
   (token as any).identity = identity;
   console.log('Token:' + token.toJwt());
   return response.send(token.toJwt());
