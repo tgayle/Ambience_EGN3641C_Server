@@ -101,7 +101,8 @@ router.get('/join', async (req, res) => {
     return res.status(404).json({error: 'That room doesn\'t exist.'})
   }
 
-  if (roomFromFirebase.password == password) {
+  if (roomFromFirebase.password && password && roomFromFirebase.password == password ||
+      !roomFromFirebase.password && !password) {
     return res.json(roomFromFirebase)
   }
   return res.status(401).json({error: 'Either that room doesn\'t exist or you entered an invalid password.'})
